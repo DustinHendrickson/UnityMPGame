@@ -1,2 +1,2 @@
-# DustinsMPGame
-3d Game Test in Unity
+# UnityMPGame
+Unity 3d Game Repo
