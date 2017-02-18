@@ -109,14 +109,17 @@ public class PlayerController : NetworkBehaviour
             }
         } else
         {
-            // Make AI Shoot
-            Vector3 clickPos = mainCamera.ScreenToWorldPoint(new Vector3(Random.Range(-720.0f, 720.0f), Random.Range(-720.0f, 720.0f), (transform.position - mainCamera.transform.position).magnitude));
-            clickPos.y = this.transform.position.y;
-
-            var random = Random.Range(1, 100);
-            if (random == 1)
+            if (gameObject.tag == "Enemy")
             {
-                CmdFire(clickPos, 0, 0);
+                // Make AI Shoot
+                Vector3 clickPos = mainCamera.ScreenToWorldPoint(new Vector3(Random.Range(-720.0f, 720.0f), Random.Range(-720.0f, 720.0f), (transform.position - mainCamera.transform.position).magnitude));
+                clickPos.y = this.transform.position.y;
+
+                var random = Random.Range(1, 100);
+                if (random <= 5)
+                {
+                    CmdFire(clickPos, 0, 0);
+                }
             }
         }
 

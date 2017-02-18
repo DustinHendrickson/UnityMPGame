@@ -527,15 +527,15 @@ PlayerSettings:
   vrEditorSettings: {}
   cloudServicesEnabled:
     Analytics: 0
-    Build: 0
-    Collab: 0
+    Build: 1
+    Collab: 1
     ErrorHub: 0
     Game_Performance: 0
     Hub: 0
     Purchasing: 0
     UNet: 1
     Unity_Ads: 0
-  cloudProjectId: ac457968-5522-4218-87cc-d3c2ee573f92
+  cloudProjectId: ee78d62f-c3f0-4acc-9ee9-4e7210eaa479
   projectName: Multiplayer Test
   organizationId: dustinh
   cloudEnabled: 0
