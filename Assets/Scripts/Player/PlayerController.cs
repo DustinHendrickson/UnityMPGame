@@ -5,11 +5,15 @@ public class PlayerController : NetworkBehaviour
 {
     public GameObject bulletPrefab;
     public GameObject healthcanvasPrefab;
-    public GameObject bulletspawnPrefab;
     public float speed;
     private Rigidbody rb;
     private float distToGround;
     private Camera mainCamera;
+    private Vector3 lastFaceDirection;
+    private Animation anim;
+    public Transform bulletSpawn;
+    public float maxSpeed = 10.0f;
+    public float jumpForce = 40.0f;
 
     [SyncVar(hook = "OnChangeOwner")]
     public int owner;
@@ -52,11 +56,27 @@ public class PlayerController : NetworkBehaviour
         transform.rotation);
         healthcanvasPrefab.transform.SetParent(this.transform, false);
 
-        bulletspawnPrefab = (GameObject)Instantiate(
-        bulletspawnPrefab,
-        new Vector3(this.transform.position.x, 2, this.transform.position.z),
-        transform.rotation);
-        bulletspawnPrefab.transform.SetParent(this.transform, false);
+        anim = GetComponent<Animation>();
+
+        anim["Walk"].speed = 2.0f;
+
+    }
+
+    public void FaceVector(Vector3 facePoint)
+    {
+        Vector3 faceDirection = Vector3.Normalize(facePoint);
+        if (faceDirection != Vector3.zero)
+        {
+            transform.forward = faceDirection;
+            lastFaceDirection = faceDirection;
+        }
+        else
+        {
+            if (lastFaceDirection != Vector3.zero)
+            {
+                transform.forward = lastFaceDirection;
+            }
+        }
 
     }
 
@@ -72,22 +92,59 @@ public class PlayerController : NetworkBehaviour
         float moveHorizontal = Input.GetAxis("Horizontal");
         float moveVertical = Input.GetAxis("Vertical");
 
-        if (Input.GetMouseButtonDown(1) && IsGrounded())
+        if (IsGrounded())
         {
-            upForce = 25.0f;
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                upForce = jumpForce;
+            }
+
+            Vector3 movement = new Vector3(moveHorizontal, upForce, moveVertical);
+
+            // Face the way we're moving.
+            FaceVector(new Vector3(moveHorizontal, 0, moveVertical));
+
+            // Add the force to move.
+            rb.AddForce(movement * speed);
+
+            if (movement != Vector3.zero)
+            {
+                // Set the animation speed to double the normal based on progress twoard max speed.
+                anim["Walk"].speed = rb.velocity.magnitude / (maxSpeed / 2);
+                if (!anim.IsPlaying("Walk"))
+                {
+                    anim.Play("Walk");
+                }
+            }
+            else
+            {
+                if (!anim.IsPlaying("Idle"))
+                {
+                    anim.Play("Idle");
+                }
+            }
+        } else
+        {
+            if (!anim.IsPlaying("Idle"))
+            {
+                anim.Play("Idle");
+            }
         }
 
-        Vector3 movement = new Vector3(moveHorizontal, upForce, moveVertical);
 
-        rb.AddForce(movement * speed);
+        // Restrict Max Speed
+        if (rb.velocity.magnitude > maxSpeed)
+        {
+            rb.velocity = rb.velocity.normalized * maxSpeed;
+        }
+
 
     }
 
     void Update()
     {
         // We move these so everyone sees them.
-        healthcanvasPrefab.transform.position = new Vector3(this.transform.position.x, (this.transform.position.y + 2), this.transform.position.z);
-        bulletspawnPrefab.transform.position = new Vector3(this.transform.position.x, (this.transform.position.y + 1.5f), this.transform.position.z);
+        healthcanvasPrefab.transform.position = new Vector3(this.transform.position.x, (this.transform.position.y + 4), this.transform.position.z);
 
         if (isLocalPlayer)
         {
@@ -95,18 +152,11 @@ public class PlayerController : NetworkBehaviour
             {
                 Vector3 clickPos = mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, (transform.position - mainCamera.transform.position).magnitude));
                 clickPos.y = this.transform.position.y;
+   
 
                 CmdFire(clickPos, owner, team);
             }
 
-            if (IsGrounded())
-            {
-                GetComponent<MeshRenderer>().material.color = Color.green;
-            }
-            else
-            {
-                //GetComponent<MeshRenderer>().material.color = Color.blue;
-            }
         } else
         {
             if (gameObject.tag == "Enemy")
@@ -129,15 +179,13 @@ public class PlayerController : NetworkBehaviour
 
     public override void OnStartLocalPlayer()
     {
-        GetComponent<MeshRenderer>().material.color = Color.green;
-
         CmdChangeTeam(gameObject, 1);
         CmdChangeOwner(gameObject, (int)Random.Range(1, 99999999999));
     }
 
     bool IsGrounded()
     {
-        return Physics.Raycast(transform.position, -Vector3.up, distToGround + 2.0f);
+        return Physics.Raycast(transform.position, -Vector3.up, distToGround + 0.2f);
     }
 
     [Command]
@@ -146,8 +194,11 @@ public class PlayerController : NetworkBehaviour
         // Create the Bullet from the Bullet Prefab
         var bullet = (GameObject)Instantiate(
             bulletPrefab,
-            bulletspawnPrefab.transform.position,
-            bulletspawnPrefab.transform.rotation);
+            bulletSpawn.position,
+            bulletSpawn.rotation);
+
+        // Make sure the bullet doesnt collide with the shooter.
+        Physics.IgnoreCollision(bullet.GetComponent<Collider>(), GetComponent<Collider>());
 
         // Face the bullet at the clicked position.
         bullet.transform.LookAt(clickPos);
@@ -157,7 +208,7 @@ public class PlayerController : NetworkBehaviour
         bullet.GetComponent<Bullet>().team = team;
 
         // Add velocity to the bullet
-        bullet.GetComponent<Rigidbody>().velocity = bullet.transform.forward * 60;
+        bullet.GetComponent<Rigidbody>().velocity = bullet.transform.forward * 30;
 
         NetworkServer.Spawn(bullet);
 
