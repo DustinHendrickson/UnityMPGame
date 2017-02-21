@@ -14,6 +14,8 @@ public class PlayerController : NetworkBehaviour
     public Transform bulletSpawn;
     public float maxSpeed = 10.0f;
     public float jumpForce = 40.0f;
+    private float lastZPoint = 0.0f;
+    public float distance = 50f;
 
     [SyncVar(hook = "OnChangeOwner")]
     public int owner;
@@ -148,11 +150,21 @@ public class PlayerController : NetworkBehaviour
 
         if (isLocalPlayer)
         {
+
+            //Adjust Camera. This will probably need to be ported to being multiplayer, will see
+            var zPosition = (transform.position.z - mainCamera.transform.position.z) - 40;
+            if (lastZPoint != zPosition)
+            {
+                lastZPoint = zPosition;
+                mainCamera.transform.position = new Vector3(mainCamera.transform.position.x, mainCamera.transform.position.y, mainCamera.transform.position.z + zPosition);
+            }
+
+
             if (Input.GetMouseButtonDown(0))
             {
-                Vector3 clickPos = mainCamera.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, (transform.position - mainCamera.transform.position).magnitude));
-                clickPos.y = this.transform.position.y;
-   
+                Vector3 clickPos = transform.position + (transform.forward * 10);
+                clickPos.y = transform.position.y + 1;
+
 
                 CmdFire(clickPos, owner, team);
             }
