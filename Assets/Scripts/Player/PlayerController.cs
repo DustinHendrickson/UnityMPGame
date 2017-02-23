@@ -13,8 +13,9 @@ public class PlayerController : NetworkBehaviour
     private Animation anim;
     public Transform bulletSpawn;
     public float maxSpeed = 10.0f;
-    public float jumpForce = 40.0f;
+    public float jumpForce = 60.0f;
     private float lastZPoint = 0.0f;
+    private float lastXPoint = 0.0f;
     public float distance = 50f;
 
     [SyncVar(hook = "OnChangeOwner")]
@@ -153,14 +154,17 @@ public class PlayerController : NetworkBehaviour
 
             //Adjust Camera. This will probably need to be ported to being multiplayer, will see
             var zPosition = (transform.position.z - mainCamera.transform.position.z) - 40;
+            var camDistance = 40;
+            var camHeight = 20;
             if (lastZPoint != zPosition)
             {
                 lastZPoint = zPosition;
-                mainCamera.transform.position = new Vector3(mainCamera.transform.position.x, mainCamera.transform.position.y, mainCamera.transform.position.z + zPosition);
+                mainCamera.transform.position = new Vector3(transform.position.x, transform.position.y + camHeight, transform.position.z - camDistance);
             }
+           
 
-
-            if (Input.GetMouseButtonDown(0))
+            //Input.GetMouseButtonDown(0)
+            if (Input.GetKeyDown(KeyCode.Keypad0) || Input.GetMouseButtonDown(0))
             {
                 Vector3 clickPos = transform.position + (transform.forward * 10);
                 clickPos.y = transform.position.y + 1;
